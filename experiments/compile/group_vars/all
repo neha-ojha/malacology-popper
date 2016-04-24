@@ -1,0 +1,20 @@
+---
+restart: False
+
+# Variables here are applicable to all host groups NOT roles
+collectl_args: "-sCcDdNnMm -i 1"
+install_docker: False
+
+################
+# CEPH ANSIBLE #
+################
+docker: true
+ceph_origin: 'upstream'
+ceph_stable_release: infernalis 
+journal_size: 1024
+
+################
+# CEPH NETWORK #
+################
+monitor_interface: em1
+public_network: 127.0.0.1/24

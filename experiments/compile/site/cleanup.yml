@@ -1,0 +1,22 @@
+- hosts: all
+  become: True
+  ignore_errors: True
+  roles:
+    - role: cleanup
+      delete:
+        - "/tmp/fetch"
+        #- "/tmp/ceph"
+        - "/etc/ceph"
+        - "/var/lib/ceph"
+      images:
+        - michaelsevilla/graphite
+        - michaelsevilla/mdtest
+        - michaelsevilla/collectl
+        - michaelsevilla/mantledev-build
+        - ceph/daemon
+        - ivotron/cephbuilder
+
+- hosts: osds
+  become: True
+  tasks:
+  - file: path=/var/lib/ceph/osd state=directory

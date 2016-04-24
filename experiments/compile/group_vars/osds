@@ -1,0 +1,13 @@
+---
+# Variables here are applicable to all host groups NOT roles
+
+osd_directory: true
+osd_directories:
+  - /var/lib/ceph/osd/mydir1
+  - /var/lib/ceph/osd/mydir2
+
+##########
+# DOCKER #
+##########
+osd_containerized_deployment: true
+ceph_osd_docker_extra_env: "CEPH_DAEMON=OSD_DIRECTORY"

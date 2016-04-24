@@ -1,0 +1,38 @@
+---
+- include: ../site/cleanup.yml
+
+- hosts: workers
+  tasks:
+    - name: start mantle container
+      shell: >
+             docker run -d -it \ 
+               --name ceph \
+               --net=host \
+               --privileged \
+               -v /tmp/ceph:/ceph \
+               -v /tmp/cephfs:/cephfs:shared \
+               --entrypoint="ceph-fuse /cephfs -d" \
+               michaelsevilla/mantledev-build
+
+    #- name: start mantle
+    #  shell: docker exec ceph /bin/bash -c "cd /ceph/src/; MON=1 MDS=3 OSD=3 ./vstart.sh -n -l"
+
+    #- name: setup debugging levels
+    #  shell: >
+    #         docker exec ceph /ceph/src/ceph --admin-daemon /ceph/src/out/mds.{{ item }}.asok config set debug_ms 0; \
+    #         docker exec ceph /ceph/src/ceph --admin-daemon /ceph/src/out/mds.{{ item }}.asok config set debug_mds 0; \
+    #         docker exec ceph /ceph/src/ceph --admin-daemon /ceph/src/out/mds.{{ item }}.asok config set debug_mds_migrator 0; \
+    #         docker exec ceph /ceph/src/ceph --admin-daemon /ceph/src/out/mds.{{ item }}.asok config set debug_mds_balancer 20; \
+    #         docker exec ceph /ceph/src/ceph --admin-daemon /ceph/src/out/mds.{{ item }}.asok config set mds_log 0; 
+    #  with_items: ["a", "b", "c"]
+
+    #- name: setup the directories and copy the interfaces to the right place
+    #  shell: >
+    #         docker exec ceph mkdir -p /usr/local/lib/rados-classes/ /usr/local/share/ceph/rados-classes/; \
+    #         docker exec ceph cp /ceph/src/.libs/libcls_lua.so /usr/local/lib/rados-classes/; \
+    #         docker exec ceph cp /ceph/src/.libs/libcls_bal_lua.so /usr/local/lib/rados-classes/; \
+    #         docker exec ceph ln -s /ceph/src/mds/mantle/bal/lua/libmantle.lua /usr/local/share/ceph/rados-classes/libmantle.lua; \
+    #         docker exec ceph /bin/bash -c "cd /ceph/src/; ./rados -p cephfs_metadata put cls_bal_greedyspill.lua mds/mantle/bal/greedyspill/cls_bal_greedyspill.lua"
+
+    #- name: tell Mantle which version of the balancer to use
+    #  shell: docker exec ceph /bin/bash -c "cd /ceph/src/; ./ceph mds set lua_balancer_script bal_greedyspill"
