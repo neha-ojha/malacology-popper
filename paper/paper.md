@@ -6,6 +6,20 @@ author:
   email: "`{carlosm,msevilla,jayhawk,ivo}@soe.ucsc.edu`"
 number-of-authors: 4
 abstract: |
+  disruptors for storage and data management
+  1. new scale requirements for data processing architectures
+  2. increasing speed of storage devices
+
+  Consequences
+  - old layers become obselete
+  - code paths are too long
+  - evolution can affect the robustness of code-hardened storage systems
+
+  In this paper we explore how existing abstractions of common services found
+in file systems can be leveraged to address new data processing systems and
+increasing speed of storage devices. This approach allows unprecedented
+flexibility while leveraging code-hardened subsystems.
+
   Ceph is a distributed storage system with many code-hardened components, yet
   many of these subsystems are never re-used or re-purposed for other tasks.
   Monitor processes (MONs) maintain systems in the cluster using consensus,
@@ -247,7 +261,8 @@ header in the data performs about 1.5x better than storing metadata as an
 extended attribute. This evaluation and resulting implementation would have
 been a burden without object classes.
 
-![When appending data to objects, the object class that stores metadata in a
+[src-cls_xattr-vs-data]:https://github.com/michaelsevilla/malacology-popper/blob/master/experiments/figure1/visualize.ipynb
+![\[[source][src-cls_xattr-vs-data]\] When appending data to objects, the object class that stores metadata in a
 header in the data byte stream (data) performs 1.5x better than the object
 class that stores metdata in the extended attributes of the object (XATTR); it
 is almost as fast as appending data without updating metadata (data
