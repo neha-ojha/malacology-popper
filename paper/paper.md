@@ -98,53 +98,113 @@ balancer (\S\ref{a-programmable-metadata-load-balancer}).
 
 # Highly Tailored and Application-Specifc Storage Systems
 
-When application goals are not met by a storage system the most common reaction
-is to design a workaround. Workarounds roughly fall into one of two categories:
-so called ``bolt-on'' services that introduce a 3rd party system (e.g. a
-metadata service), or expanded application responsibility in the form of data
-management (e.g. a new data layout).
+A consequence of complicated data management frameworks and faster devices
+is that the storage system cannot meet the needs of the general-purpose storage
+system. Workarounds for helping the application meet its performance goals
+roughly fall into one of three categories: "bolt-on" services, application
+changes, and storage changes. In this section we touch on each subject using
+examples from both the Ceph and Hadoop communities to show the breadth and extent of the problem. 
 
-\textbf{Extra Services}: "Bolt-on" services are designed to improve overall
-application performance, but come at the expensive of additional sub-systems
-and dependencies that the application must manage, as well as trust. For
-example, it is well understood that MapReduce performs poorly for iterative and
-interactive computation due to its failure model that heavily relies on on-disk
-storage of intermediate data. Many have added services to Hadoop to keep more
-data in the runtime (e.g., HaLoop~\cite{bu:vldb2010-haloop},
+##"Bolt-on" services 
+
+So called "bolt-on" services are 3rd party systems that are integrated into the
+targeted software stack to accomodate data management and faster devices.  But
+these extra services come at the expense of additional sub-systems,
+dependencies, and data layouts that the application must manage, as well as
+trust. For example, MapReduce performs poorly for iterative and interactive
+computation because of its failure model that relies on on-disk storage of
+intermediate data. Many have added services to Hadoop to keep more data in the
+runtime (e.g., HaLoop~\cite{bu:vldb2010-haloop},
 Twister~\cite{ekanayake:hpdc2010-twister},
 CGL-MapReduce~\cite{ekanayake:escience2008-eglmapreduce},
 MixApart~\cite{mihailescu:hotstorage2012-mixapart}). While performance
-improves, it comes at a cost: "bolt-on" services frequently result in overly
-complex systems that re-implement functionality and re-execute redundant code,
-unnecessarily increasing the likelihood of bugs.
+improves, it comes at the cost of simplicity. 
 
-\textbf{Application Changes}: The second approach to adapting to a storage
-system deficiency is to change the application itself by adding more data
-management intelligence, often into the application itself, or as
-domain-specific middleware. For instance, an application may change to exploit
-data locality or I/O parallelism in a distributed storage system. This is not a
-bad proposition, but creates a coupling that is highly tied to the underlying
-physical properties of the system, making it difficult to adapt to future
-changes at the storage system level.
+Furthermore, "bolt-on" services often duplicate functionality and execute redundant code, unnecessarily increasing the likelihood of bugs or worse,
+introducing unpredictable performance problems. For example, we are developing a system built on Ceph called ZLog. ZLog uses a "sequencer" to distribute tokens to clients wishing to append to the end of a shared commit log. When designing the sequencer, we considered bolting on Zookeeper \cite{} as a service. While Zookeeper provides many robust service, and while it woudl certainly satisfy our requirements, it would perform`Unfortunately, Zookeeper is persistent but teh sequencer is in memory and volatile. 
 
-\textbf{Storage Changes}: When these two approaches fail to meet the needs of the
-application, developers turn their attention to the storage system itself. For
-example, HDFS has been the focus of scalability concerns, especially for
+## Application Changes
+
+The second approach to adapting to a storage system deficiency is to extend the
+responsibility of the application. This means changing the application itself
+by adding more data management intelligence or domain-specific middleware.  For
+instance, an application may change itself to exploit data locality or I/O
+parallelism in a distributed storage system. 
+
+For example, SciHadoop~\cite{} changes both the Hadoop application and the
+Hadoop framework itself to leverage the structure of scientific (3D array-based
+data, more specifically) to increase performance, locality, and the number of
+early results. This is not a bad proposition, but creates a coupling that is
+highly tied to the underlying physical properties of the system, making it
+difficult to adapt to future changes at the storage system level.
+
+## Storage Changes
+
+When these two approaches fail to meet the needs of the application, developers
+turn their attention to the storage system itself. Traditionally, storage
+system behaviour can be altered using two techniques: tuning the system or
+introducing changes to the system. The difficulty of both of these approaches
+has given rise to a third technique called active storage. 
+
+### Tuning 
+
+Tuning the system usually refers to setting parameters about the system. For
+large complicated systems this can be near impossible because the systems have
+so many knobs (xxxx tunables in Hadopo \cite{sevilla-discs}) and sometimes the
+knobs are difficult to understand or quantify (xx tunable in Ceph
+\cite{sevilla-sc}). To succesfully tune the system, the developer must have
+domain and system specific knowledge. Without this intimate knowledge, the
+tuning turns into somewhat of a black art, where the only way to figure out the
+best settings is trial and error. 
+
+Auto-tuning techniques attempt to find a good solution among a huge space of
+available system configurations.  However, in practice auto-tuning is limited
+to only the configuration "knobs" that the storage system exposes (e.g. block
+size) and can be overwhelmed with too many parameters. Starfish \cite{} made an
+attempt of this for Hadoop but this technique would need to severely limit the
+space of parameters in order to feasible, similar to the approach used in
+\cite{babak autotuning using genetic algorithms}. For instance, auto-tuning may
+be capable of identifying instances in which new data layouts would benefit a
+workload, but unless the system can provide such a transformation, the option
+is left off the table.
+
+### Software changes 
+
+As a last resort, the application developer can introduce changes to the
+storage system itself. This endeavour is especially difficult because the
+developer must first familiarate themselves with the storage system, and even
+if they manage to make the necessary changes, they must get their changes
+upstream for that specific project or become mantainer for their in-house
+version. Being a maintainer means they re-base their versions against new
+versions of the storage system and address any bugs for their branched code.  A
+successful example of this is the work that focused on HDFS scalability for
 metadata-intensive workloads~\cite{shvachko:login2012-hdfs-scalability}. This
 has lead to modifications to its architecture or
-API~\cite{balmin:sigmod2012-clydesdale} to improve performance. Yet another
-approach is to "modify"  a storage system using auto-tuning techniques that
-attempt to find a good solution among a huge space of available system
-configurations. However, in practice auto-tuning is limited to only the
-configuration "knobs" that the storage system exposes (e.g. block size). For
-instance, auto-tuning may be capable of identifying instances in which new data
-layouts would benefit a workload, but unless the system can provide such a
-transformation, the option is left off the table.
+API~\cite{balmin:sigmod2012-clydesdale} to improve performance. 
 
-We advocate a new approach that we refer to as _storage programmability_
-which is a method by which an application communicates its requirements to the
-storage system in a way that allows the application to realize a new behavior
-without sacrificing the correctness of the underlying system. 
+As an example, ZLog needs to store metadata information with each object. For
+each operation, it checks the epoch value and write capability (2 metadata
+reads) and writes the index (metadata write). Figure 1 shows the throughput
+(_y_ axis) over time (_x_ axis) of two object class implementations for storing
+metadata: in the header of the byte stream (data) vs. in the object extended
+attributes (XATTR). The speed for appending data without any metadata
+operations (data raw) is also shown as a baseline for comparison. For
+append-heavy workloads storing metadata as a header in the data performs about
+1.5x better than storing metadata as an extended attribute. 
+
+![When appending data to objects, the object class that stores metadata in a
+header in the data byte stream (data) performs 1.5x better than the object
+class that stores metdata in the extended attributes of the object (XATTR); it
+is almost as fast as appending data without updating metadata (data
+raw).](figures/cls_xattr-vs-data.png)
+
+
+These implementations are produced using Ceph's active storage interfaces. We
+refer to this as _storage programmability_ which is a method by which an
+application communicates its requirements to the storage system in a way that
+allows the application to realize a new behavior without sacrificing the
+correctness of the underlying system.  This evaluation and resulting
+implementation would have been a burden without object classes.
 
 <!-- PICTURE: figures/object-interfaces.png 
      Ceph object storage interfaces. Left: data transferred over network
@@ -152,6 +212,7 @@ without sacrificing the correctness of the underlying system.
      (libcls\_md5.so) to execute.
 -->
 
+### Active Storage
 <!-- What are object storage interfaces? --> 
 
 Active storage is a hybrid approach to changing the application and storage
@@ -234,24 +295,6 @@ commit with a corresponding number of lines of code changed.
 \end{tabular}
 \end{center}
 \end{table}
-
-As an example, ZLog, a research prototype built on Ceph, needs to store
-metadata information with each object. For each operation, it checks the epoch
-value and write capability (2 metadata reads) and writes the index (metadata
-write). Figure 1 shows the throughput (_y_ axis) over time (_x_ axis) of two
-object class implementations for storing metadata: in the header of the byte
-stream (data) vs. in the object extended attributes (XATTR). The speed for
-appending data without any metadata operations (data raw) is also shown as a
-baseline for comparison. For append-heavy workloads storing metadata as a
-header in the data performs about 1.5x better than storing metadata as an
-extended attribute. This evaluation and resulting implementation would have
-been a burden without object classes.
-
-![When appending data to objects, the object class that stores metadata in a
-header in the data byte stream (data) performs 1.5x better than the object
-class that stores metdata in the extended attributes of the object (XATTR); it
-is almost as fast as appending data without updating metadata (data
-raw).](figures/cls_xattr-vs-data.png)
 
 # Ceph is a Production-Quality Distribute System
 
