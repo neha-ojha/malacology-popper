@@ -7,9 +7,11 @@ docker: true
 #############
 ceph_conf_overrides:
    global:
-     osd pool_default_size: 1
+     osd pool default size: 1
+     osd pool default pg num: 4096
+     osd pool default pgp num: 4096
    mon:
-     debug mon = 1
+     debug mon: 1
    osd:
      debug osd: 0
      osd mkfs type: ext4
@@ -28,4 +30,4 @@ ceph_conf_overrides:
      mds log max expiring: 40
      mds log max segments: 120
    client:
-     debug client = 0
+     debug client: 0

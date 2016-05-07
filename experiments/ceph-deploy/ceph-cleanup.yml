@@ -3,11 +3,14 @@
 # This playbook purges a containerized Ceph cluster
 # It removes: packages, configuration files and ALL THE DATA
 
-- hosts: mons, osds
+- hosts: localhost
+  tasks:
+  - name: delete the config directory on the ansible server
+    file: path="{{ playbook_dir }}/fetch" state=absent
+
+- hosts: all
   become: True
   tasks:
-  - name: install the latest version of gdisk
-    package: name=gdisk state=present
   - name: collect ceph containers
     shell: docker ps -aq --filter="ancestor=piha.soe.ucsc.edu:5000/ivotron/ceph-mantle:jewel"
     register: containers
@@ -29,3 +32,11 @@
   - name: disk zap again
     command: sgdisk --zap-all --clear --mbrtogpt -g -- {{ item }}
     with_items: ceph_osd_docker_devices
+  - name: journal zap
+    command: sgdisk --zap-all --clear --mbrtogpt -g -- {{ journal }}
+  - name: journal zap again
+    command: sgdisk --zap-all --clear --mbrtogpt -g -- {{ journal }}
+  #- name: make the directory for the journal
+  #  file: path=/var/lib/ceph/journal state=directory
+  #- name: mount the journal 
+  #  mount: name=/var/lib/ceph/journal src=/dev/sde1 state=mounted fstype=ext4
