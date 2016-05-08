@@ -5,3 +5,4 @@ paper/build.log
 .ropeproject/
 .ipynb_checkpoints/
 fetch
+*.log
